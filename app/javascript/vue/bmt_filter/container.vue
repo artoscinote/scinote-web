@@ -37,7 +37,7 @@
         <i class="fas fa-plus"></i>
         {{ i18n.t('repositories.show.bmt_search.add_filter') }}
       </button>
-      <button class="btn btn-primary">
+      <button @click="applyFilters" class="btn btn-primary">
         {{ i18n.t('repositories.show.bmt_search.apply') }}
       </button>
     </div>
@@ -62,7 +62,16 @@
     components: { FilterElement, SavedFilterElement },
     computed: {
       searchJSON() {
-        return this.filters.map((f) => f.data);
+        const filterData = this.filters.map(f => f.data)
+        return {
+          'filters': filterData,
+          'resultAttributeNames': [
+            'Cid',
+            'Name',
+            'Helm',
+            'MacromoleculeType'
+          ]
+        }
       }
     },
     watch: {
@@ -72,7 +81,7 @@
     },
     methods: {
       addFilter() {
-        let id = this.filters.length ? this.filters[this.filters.length - 1].id + 1 : 1
+        const id = this.filters.length ? this.filters[this.filters.length - 1].id + 1 : 1
         this.filters.push({ id: id, data: { type: "fullSequenceFilter" } });
       },
       updateFilter(filter) {
@@ -80,6 +89,16 @@
       },
       clearAllFilters() {
         this.filters = [];
+      },
+      applyFilters() {
+        $.ajax({
+          type: 'POST',
+          url: '/biomolecule_toolkit/api/macromolecules',
+          data: JSON.stringify(this.searchJSON),
+          contentType: 'application/json; charset=utf-8',
+          dataType: 'json',
+          success: (data) => console.log(data)
+        });
       },
       openSavedFilters() {
         $('.savedFilterContainer').toggleClass('open')
