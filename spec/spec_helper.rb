@@ -38,4 +38,32 @@ RSpec.configure do |config|
       Bullet.end_request
     end
   end
+
+  config.before(:suite) do
+    class Activity
+      mattr_accessor :logged_activity_webhook_payloads
+
+      before_save :save_activity_payload
+
+      @@logged_activity_webhook_payloads = []
+
+      def save_activity_payload
+        payload = Activities::ActivityWebhookService.new(Webhook.new, self).activity_payload
+        payload[:created_at] = Time.now
+        @@logged_activity_webhook_payloads.push payload
+      end
+    end
+  end
+
+  config.after(:suite) do
+    Activity.logged_activity_webhook_payloads.uniq { |ap| ap[:type] }.each do |activity_payload|
+      open('activity_payloads.md', 'a') do |f|
+        f.puts "### #{activity_payload[:type].humanize}"
+        f.puts "```"
+        f.puts JSON.pretty_generate(activity_payload)
+        f.puts "```"
+        f.puts
+      end
+    end
+  end
 end
