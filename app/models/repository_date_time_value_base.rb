@@ -12,6 +12,14 @@ class RepositoryDateTimeValueBase < ApplicationRecord
 
   validates :repository_cell, :data, :type, presence: true
 
+  scope :with_active_reminder, lambda {
+    joins(repository_cell: :repository_column).where(
+      "repository_columns.metadata ? 'reminder_delta' AND "\
+      "(repository_date_time_values.data - NOW()) <= "\
+      "(repository_columns.metadata -> 'reminder_delta')::int * interval '1 sec'"
+    )
+  }
+
   SORTABLE_COLUMN_NAME = 'repository_date_time_values.data'
 
   def formatted(format)

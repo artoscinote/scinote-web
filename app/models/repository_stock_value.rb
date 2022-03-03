@@ -10,6 +10,11 @@ class RepositoryStockValue < ApplicationRecord
 
   validates :repository_cell, presence: true
 
+  scope :with_active_reminder, lambda {
+    where.not(low_stock_threshold: nil)
+         .where('repository_stock_values.amount <= repository_stock_values.low_stock_threshold')
+  }
+
   SORTABLE_COLUMN_NAME = 'repository_stock_values.amount'
 
   def formatted

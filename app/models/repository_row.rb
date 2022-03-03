@@ -34,7 +34,8 @@ class RepositoryRow < ApplicationRecord
     repository_date: 'RepositoryDateValue',
     repository_date_time_range: 'RepositoryDateTimeRangeValue',
     repository_time_range: 'RepositoryTimeRangeValue',
-    repository_date_range: 'RepositoryDateRangeValue'
+    repository_date_range: 'RepositoryDateRangeValue',
+    repository_stock: 'RepositoryStockValue'
   }.each do |relation, class_name|
     has_many "#{relation}_cells".to_sym, -> { where(value_type: class_name) }, class_name: 'RepositoryCell',
              inverse_of: :repository_row
@@ -83,6 +84,31 @@ class RepositoryRow < ApplicationRecord
 
   scope :active, -> { where(archived: false) }
   scope :archived, -> { where(archived: true) }
+
+  scope :in_repository_with_active_reminders, lambda { |repository|
+    repository_cell_ids =
+      RepositoryCell.joins(repository_row: :repository)
+                    .where(repositories: { id: repository.id })
+                    .select(:id)
+
+    joins(:repository_cells).where(
+      repository_cells: {
+        id: RepositoryDateTimeValueBase.joins(:repository_cell)
+                                       .where(repository_cells: { id: repository_cell_ids })
+                                       .with_active_reminder
+                                       .select('repository_cells.id')
+      }
+    ).or(
+      RepositoryRow.joins(:repository_cells).where(
+        repository_cells: {
+          id: RepositoryStockValue.joins(:repository_cell)
+                                  .where(repository_cells: { id: repository_cell_ids })
+                                  .with_active_reminder
+                                  .select('repository_cells.id')
+        }
+      )
+    )
+  }
 
   def code
     "#{ID_PREFIX}#{parent_id || id}"

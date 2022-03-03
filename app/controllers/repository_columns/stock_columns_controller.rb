@@ -47,7 +47,7 @@ module RepositoryColumns
     def repository_column_params
       params
         .require(:repository_column)
-        .permit(:name, metadata: [:decimals], repository_stock_unit_items_attributes: %i(data))
+        .permit(:name, :low_stock_threshold, metadata: [:decimals], repository_stock_unit_items_attributes: %i(data))
     end
   end
 end
