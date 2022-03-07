@@ -4,6 +4,12 @@ Rails.application.routes.draw do
   end
 
   # Addons
+  mount Scinote::Common::Engine => '/'
+  mount Scinote::Enterprise::ElectronicSignatures::Engine => '/'
+  mount Scinote::Enterprise::OrganizationManagement::Engine => '/'
+  mount Scinote::Core::Gamification::Engine => '/'
+  mount Scinote::Core::Billing::Engine => '/'
+  mount Scinote::Enterprise::AuditTrails::Engine => '/'
 
   def draw(routes_name)
     instance_eval(File.read(Rails.root.join("config/routes/#{routes_name}.rb")))
@@ -596,6 +602,7 @@ Rails.application.routes.draw do
         end
         member do
           get :assigned_task_list
+          get :active_reminder_repository_cells
         end
         member do
           get 'repository_stock_value/new', to: 'repository_stock_values#new', as: 'new_repository_stock'
@@ -640,6 +647,7 @@ Rails.application.routes.draw do
             get 'items'
           end
         end
+        resources :stock_columns, only: %i(create update)
       end
     end
 

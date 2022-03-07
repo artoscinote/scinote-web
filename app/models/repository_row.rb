@@ -114,6 +114,22 @@ class RepositoryRow < ApplicationRecord
     "#{ID_PREFIX}#{parent_id || id}"
   end
 
+  def active_reminder_repository_cells
+    RepositoryCell.where(
+      id: RepositoryDateTimeValueBase.joins(:repository_cell)
+                                     .where(repository_cells: { repository_row_id: id })
+                                     .with_active_reminder
+                                     .select('repository_cells.id')
+    ).or(
+      RepositoryCell.where(
+        id: RepositoryStockValue.joins(:repository_cell)
+                                .where(repository_cells: { repository_row_id: id })
+                                .with_active_reminder
+                                .select('repository_cells.id')
+      )
+    )
+  end
+
   def self.viewable_by_user(user, teams)
     where(repository: Repository.viewable_by_user(user, teams))
   end
