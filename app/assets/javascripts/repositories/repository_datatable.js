@@ -442,7 +442,16 @@ var RepositoryDatatable = (function(global) {
       stateDuration: 0,
       colReorder: {
         fixedColumnsLeft: 2,
+        disableClass: 'dt-colresizable-hover',
         realtime: false
+      },
+      colResize: {
+        isEnabled: true,
+        saveState: true,
+        hoverClass: 'dt-colresizable-hover',
+        isResizable: (column) => {
+          return column.idx >= 2;
+        }
       },
       destroy: true,
       ajax: {
@@ -612,6 +621,12 @@ var RepositoryDatatable = (function(global) {
       stateSaveCallback: function(settings, data) {
         // Send an Ajax request to the server with the state object
         let repositoryId = $(TABLE_ID).data('repository-id');
+        let dataTable = $(TABLE_ID).DataTable();
+
+        // set column widths
+        dataTable.state().columns.forEach((column, i) => {
+          column.width = dataTable.settings()[0].aoColumns[i].nTh.offsetWidth;
+        });
 
         $.ajax({
           url: '/repositories/' + repositoryId + '/state_save',
@@ -705,7 +720,6 @@ var RepositoryDatatable = (function(global) {
     //     adjustTableHeader();
     //   }, 500);
     // });
-
     return TABLE;
   }
 

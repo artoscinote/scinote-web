@@ -20322,6 +20322,12 @@ $.extend( ColReorder.prototype, {
 			return;
 		}
 
+		// Added by SciNote to support the colResize plugin and colReorder simultaniously
+		// disable colReorder drag if disableClass is present
+		if ( target.hasClass(this.s.init.disableClass) ) {
+			return;
+		}
+
 		this.s.mouse.startX = this._fnCursorPosition( e, 'pageX' );
 		this.s.mouse.startY = this._fnCursorPosition( e, 'pageY' );
 		this.s.mouse.offsetX = this._fnCursorPosition( e, 'pageX' ) - offset.left;
