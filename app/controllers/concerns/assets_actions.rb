@@ -41,6 +41,7 @@ module AssetsActions
         .call(activity_type: :edit_image_on_result,
               owner: current_user,
               subject: asset.result,
+              my_module: my_module,
               team: my_module.team,
               project: my_module.project,
               message_items: {

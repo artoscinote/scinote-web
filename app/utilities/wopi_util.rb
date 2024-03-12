@@ -140,6 +140,7 @@ module WopiUtil
     elsif @assoc.class == Result
       Activities::CreateActivityService
         .call(activity_type: :edit_wopi_file_on_result,
+              my_module: @my_module,
               owner: current_user,
               subject: @asset.result,
               team: @my_module.experiment.project.team,

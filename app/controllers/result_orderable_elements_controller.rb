@@ -41,6 +41,7 @@ class ResultOrderableElementsController < ApplicationController
       .call(activity_type: type_of,
             owner: current_user,
             subject: @result,
+            my_module: @my_module,
             team: @my_module.team,
             project: project,
             message_items: message_items)

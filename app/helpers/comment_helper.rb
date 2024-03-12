@@ -246,6 +246,7 @@ module CommentHelper
     result = comment.result
     Activities::CreateActivityService
       .call(activity_type: type_of,
+            my_module: result.my_module,
             owner: current_user,
             subject: result,
             team: result.my_module.experiment.project.team,

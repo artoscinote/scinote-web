@@ -50,6 +50,7 @@ module ResultElements
         owner: current_user,
         team: @my_module.team,
         subject: @result,
+        my_module: @my_module,
         project: @my_module.experiment.project,
         message_items: {
           result: @result.id

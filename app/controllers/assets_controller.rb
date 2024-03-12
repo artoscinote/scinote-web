@@ -371,6 +371,7 @@ class AssetsController < ApplicationController
       .call(activity_type: type_of,
             owner: current_user,
             subject: result,
+            my_module: result.my_module,
             team: result.my_module.team,
             project: result.my_module.project,
             message_items: {
