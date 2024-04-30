@@ -183,7 +183,8 @@ class Extends
   DEFAULT_DASHBOARD_CONFIGURATION = [
     { partial: 'dashboards/current_tasks', visible: true, size: 'large-widget', position: 1 },
     { partial: 'dashboards/calendar', visible: true, size: 'small-widget', position: 2 },
-    { partial: 'dashboards/recent_work', visible: true, size: 'medium-widget', position: 3 }
+    { partial: 'dashboards/notifications', visible: true, size: 'medium-widget', position: 3 },
+    { partial: 'dashboards/recent_work', visible: true, size: 'medium-widget', position: 4 }
   ]
 
   ACTIVITY_SUBJECT_TYPES = %w(
@@ -650,6 +651,7 @@ class Extends
     ReportTemplates_archived_state
     Repositories_active_state
     Repositories_archived_state
+    widget_notification_types
   ).freeze
 end
 

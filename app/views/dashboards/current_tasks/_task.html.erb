@@ -1,5 +1,5 @@
 <% task_date = current_task_date(task) %>
-<a class="current-task-item" href="<%= protocols_my_module_path(task.id) %>">
+<a class="current-task-item <%= 'fire' if task_date[:span_class] == 'overdue' %>" href="<%= protocols_my_module_path(task.id) %>">
   <div class="current-task-breadcrumbs"><%= task.project_name %>
     <span class="slash">/</span>
     <%= task.experiment_name %>

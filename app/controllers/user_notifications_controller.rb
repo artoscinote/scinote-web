@@ -18,12 +18,31 @@ class UserNotificationsController < ApplicationController
     }
   end
 
+  def filter_groups
+    render json:
+      {
+        data:
+          NotificationExtends::NOTIFICATIONS_GROUPS.values.map(&:keys)
+                                                   .flatten
+                                                   .map { |g| [g, I18n.t("notifications.sub_groups.#{g}")] }
+      }
+  end
+
   private
 
   def load_notifications
-    current_user.notifications
-                .in_app
-                .order(created_at: :desc)
-  end
+    notifications =
+      current_user.notifications
+                  .in_app
+                  .order(created_at: :desc)
 
+    subgroups = params[:subgroups]&.split(',')
+
+    if subgroups&.any?
+      notifications =
+        notifications.where(subtype: subgroups.map { |sg| Notification.subgroup_subtypes(sg) }.flatten)
+    end
+
+    notifications
+  end
 end

@@ -1,0 +1,11 @@
+<div class="notifications-widget basic-widget <%= widget[:size] %>" style="order: <%= widget[:position] %>">
+  <div id="notificationWidget" data-behaviour="vue">
+    <notification-widget
+      :notification-groups="<%= NotificationExtends::NOTIFICATIONS_GROUPS.to_json %>"
+      notifications-url="<%= user_notifications_path %>"
+      filter-groups-url="<%= filter_groups_user_notifications_path %>"
+      user-settings-url="<%= users_settings_user_settings_path %>"
+    />
+  </div>
+</div>
+<%= javascript_include_tag 'vue_notification_widget' %>
