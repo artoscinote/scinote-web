@@ -193,6 +193,7 @@ export default {
       return roles;
     },
     getRoles() {
+      console.log('get roles', this.params.roles_path)
       axios.get(this.params.roles_path)
         .then((response) => {
           this.roles = response.data.data;

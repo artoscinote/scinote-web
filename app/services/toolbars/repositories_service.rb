@@ -24,7 +24,7 @@ module Toolbars
       if @archived_state
         [export_action, restore_action, delete_action]
       else
-        [rename_action, duplicate_action, export_action, archive_action, share_action]
+        [rename_action, duplicate_action, export_action, archive_action, share_action, access_action]
       end.compact
     end
 
@@ -37,6 +37,21 @@ module Toolbars
         name: :update,
         label: I18n.t('libraries.index.buttons.edit'),
         icon: 'sn-icon sn-icon-edit',
+        type: :emit
+      }
+    end
+
+    def access_action
+      return unless @single
+
+      repository = @repositories.first
+
+      return unless can_manage_team?(repository.team) || can_read_repository?(repository)
+
+      {
+        name: 'access',
+        label: I18n.t('general.access'),
+        icon: 'sn-icon sn-icon-project-member-access',
         type: :emit
       }
     end

@@ -6,7 +6,7 @@ module Lists
     include Rails.application.routes.url_helpers
     include ShareableSerializer
 
-    attributes :name, :code, :nr_of_rows, :team, :created_at, :created_by, :archived_on, :archived_by, :urls
+    attributes :name, :code, :nr_of_rows, :team, :created_at, :created_by, :archived_on, :archived_by, :urls, :top_level_assignable
 
     def nr_of_rows
       object[:repository_rows_count]
@@ -32,6 +32,10 @@ module Lists
       object[:archived_by_user]
     end
 
+    def top_level_assignable
+      object.top_level_assignable?
+    end
+
     def urls
       {
         show: repository_path(object),
@@ -40,7 +44,12 @@ module Lists
         shareable_teams: shareable_teams_team_shared_objects_path(
           current_user.current_team, object_id: object.id, object_type: 'Repository'
         ),
-        share: team_shared_objects_path(current_user.current_team, object_id: object.id, object_type: 'Repository')
+        share: team_shared_objects_path(current_user.current_team, object_id: object.id, object_type: 'Repository'),
+        show_access: access_permissions_repository_path(object),
+        assigned_users: assigned_users_list_repository_path(object),
+        update_access: access_permissions_repository_path(object),
+        new_access: new_access_permissions_repository_path(id: object.id),
+        create_access: access_permissions_repositories_path(id: object.id)
       }
     end
   end

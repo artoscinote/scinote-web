@@ -16,6 +16,7 @@
                @duplicate="duplicate"
                @export="exportRepositories"
                @share="share"
+               @access="access"
                @create="newRepository = true"
                @tableReloaded="reloadingTable = false"
     />
@@ -75,6 +76,8 @@
           confirm: 'e2e-BT-confirmSharingChangesModal-delete'
     }"
   ></ConfirmationModal>
+  <AccessModal v-if="accessModalParams" :params="accessModalParams"
+              @close="accessModalParams = null" @refresh="this.reloadingTable = true" />
 </template>
 
 <script>
@@ -89,6 +92,8 @@ import DuplicateRepositoryModal from './modals/duplicate.vue';
 import ShareObjectModal from '../shared/share_modal.vue';
 import DataTable from '../shared/datatable/table.vue';
 import NameRenderer from './renderers/name.vue';
+import AccessModal from '../shared/access_modal/modal.vue';
+
 
 export default {
   name: 'RepositoriesTable',
@@ -100,7 +105,8 @@ export default {
     EditRepositoryModal,
     DuplicateRepositoryModal,
     NameRenderer,
-    ShareObjectModal
+    ShareObjectModal,
+    AccessModal
   },
   props: {
     dataSource: {
@@ -123,6 +129,10 @@ export default {
       required: true
     },
     archivedPageUrl: {
+      type: String,
+      required: true
+    },
+    userRolesUrl: {
       type: String,
       required: true
     }
@@ -150,7 +160,8 @@ export default {
       exportModal: {
         title: '',
         description: ''
-      }
+      },
+      accessModalParams: null
     };
   },
   computed: {
@@ -299,6 +310,12 @@ export default {
     share(_event, rows) {
       const [repository] = rows;
       this.shareRepository = repository;
+    },
+    access(_event, rows) {
+      this.accessModalParams = {
+        object: rows[0],
+        roles_path: this.userRolesUrl
+      };
     }
   }
 };

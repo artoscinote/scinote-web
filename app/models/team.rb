@@ -200,6 +200,10 @@ class Team < ApplicationRecord
     shareable_links.count
   end
 
+  def permission_parent
+    nil
+  end
+
   private
 
   def generate_template_project

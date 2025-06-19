@@ -8,17 +8,18 @@ class RepositoriesController < ApplicationController
   include TeamsHelper
   include RepositoriesDatatableHelper
   include MyModulesHelper
+  include UserRolesHelper
 
   before_action :switch_team_with_param, only: %i(index)
   before_action :load_repository, except: %i(index create create_modal sidebar archive restore actions_toolbar
-                                             export_repositories list)
+                                             export_repositories list user_roles)
   before_action :load_repositories, only: %i(index list)
   before_action :load_repositories_for_archiving, only: :archive
   before_action :load_repositories_for_restoring, only: :restore
   before_action :check_view_all_permissions, only: %i(index sidebar list)
   before_action :check_view_permissions, except: %i(index create_modal create update destroy parse_sheet
                                                     import_records sidebar archive restore actions_toolbar
-                                                    export_repositories list)
+                                                    export_repositories list user_roles)
   before_action :check_manage_permissions, only: %i(rename_modal update)
   before_action :check_delete_permissions, only: %i(destroy destroy_modal)
   before_action :check_archive_permissions, only: %i(archive restore)
@@ -148,6 +149,12 @@ class RepositoriesController < ApplicationController
     HideRepositoryRemindersJob.perform_later(@repository, current_user.id)
 
     render json: { status: :ok }, status: :accepted
+  end
+
+  def assigned_users_list
+    users = @repository.users.search(false, params[:query]).order(:full_name)
+
+    render json: { data: users.map { |u| [u.id, u.name, { avatar_url: avatar_path(u, :icon_small) }] } }, status: :ok
   end
 
   def create
@@ -287,6 +294,10 @@ class RepositoriesController < ApplicationController
     render json: ::RepositoryDatatable.new(view_context, @repository, nil, current_user)
   end
 
+  def user_roles
+    render json: { data: user_roles_collection(Repository.new).map(&:reverse) }
+  end
+
   def parse_sheet
     render_403 unless can_create_repository_rows?(@repository)
 
@@ -323,7 +334,9 @@ class RepositoriesController < ApplicationController
           render json: { error: t('repositories.parse_sheet.errors.temp_file_failure') }, status: :unprocessable_entity
         end
       end
-    rescue ArgumentError, CSV::MalformedCSVError
+    rescue ArgumentError, CSV::MalformedCSVError => e
+      Rails.logger.error(e)
+      Rails.logger.error(e.backtrace.join("\n"))
       render json: { error: t('repositories.parse_sheet.errors.invalid_file', encoding: ''.encoding) },
              status: :unprocessable_entity
     rescue TypeError

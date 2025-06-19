@@ -36,6 +36,7 @@ class Repository < RepositoryBase
   after_save :unassign_globally_shared_inventories, if: -> { saved_change_to_permission_level? && !globally_shared? }
   after_save :unassign_unshared_items, if: :saved_change_to_permission_level
   after_save :unlink_unshared_items, if: -> { saved_change_to_permission_level? && !globally_shared? }
+  has_many :users, through: :user_assignments
 
   validates :name,
             presence: true,
@@ -70,6 +71,14 @@ class Repository < RepositoryBase
     active.where(id: (readable_ids + shared_with_team_ids + globally_shared_ids).uniq)
   }
 
+  def permission_parent
+    nil
+  end
+
+  def top_level_assignable?
+    true
+  end
+
   def readable_by_user?(user)
     permission_granted?(user, RepositoryPermissions::READ)
   end
@@ -88,10 +97,6 @@ class Repository < RepositoryBase
 
   def self.filter_by_teams(teams = [])
     teams.blank? ? self : where(team: teams)
-  end
-
-  def permission_parent
-    team
   end
 
   def default_table_state

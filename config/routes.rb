@@ -330,6 +330,7 @@ Rails.application.routes.draw do
         put :update_default_public_user_role, on: :member
       end
 
+      resources :repositories, defaults: { format: 'json' }
       resources :experiments, only: %i(show update edit)
       resources :my_modules, only: %i(show update edit)
     end
@@ -738,10 +739,16 @@ Rails.application.routes.draw do
            as: 'table_index',
            defaults: { format: 'json' }
       member do
+        get :assigned_users_list
         get :assigned_my_modules
         get :repository_users
         get :load_table
       end
+
+      collection do
+        get :user_roles
+      end
+
       # Save repository table state
       post 'state_save',
            to: 'user_repositories#save_table_state',
