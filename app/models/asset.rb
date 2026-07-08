@@ -13,7 +13,7 @@ class Asset < ApplicationRecord
 
   require 'tempfile'
   # Lock duration set to 30 minutes
-  LOCK_DURATION = 60 * 30
+  WOPI_LOCK_DURATION = 60 * 30
   SEARCHABLE_ATTRIBUTES = ['active_storage_blobs.filename', 'asset_text_data.data_vector'].freeze
 
   enum view_mode: { thumbnail: 0, list: 1, inline: 2 }
@@ -334,33 +334,33 @@ class Asset < ApplicationRecord
 
   # locked?, lock_asset and refresh_lock rely on the asset
   # being locked in the database to prevent race conditions
-  def locked?
-    unlock_expired
-    !lock.nil?
+  def wopi_locked?
+    wopi_unlock_expired
+    !wopi_lock.nil?
   end
 
-  def lock_asset(lock_string)
-    self.lock = lock_string
-    self.lock_ttl = Time.now.to_i + LOCK_DURATION
+  def wopi_lock_asset(lock_string)
+    self.wopi_lock = lock_string
+    self.wopi_lock_ttl = Time.now.to_i + WOPI_LOCK_DURATION
     save!
   end
 
-  def refresh_lock
-    self.lock_ttl = Time.now.to_i + LOCK_DURATION
+  def wopi_refresh_lock
+    self.wopi_lock_ttl = Time.now.to_i + WOPI_LOCK_DURATION
     save!
   end
 
-  def unlock
-    self.lock = nil
-    self.lock_ttl = nil
+  def wopi_unlock
+    self.wopi_lock = nil
+    self.wopi_lock_ttl = nil
     save!
   end
 
-  def unlock_expired
+  def wopi_unlock_expired
     if !lock_ttl.nil? && lock_ttl < Time.now.to_i
       with_lock do
-        self.lock = nil
-        self.lock_ttl = nil
+        self.wopi_lock = nil
+        self.wopi_lock_ttl = nil
         save!
       end
     end
