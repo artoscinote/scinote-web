@@ -189,7 +189,10 @@
         />
       </template>
       <div class="collapse in pl-10" :id="'resultBody' + result.id">
-        <div v-for="(element, index) in orderedElements" :key="element.id">
+        <div v-for="(element, index) in orderedElements" :key="element.id" class="relative">
+          <div v-if="editingFlagsFor(element.id).length" class="absolute -bottom-4 left-0 z-10 flex gap-1">
+            <EditingTag v-for="flag in editingFlagsFor(element.id)" :key="flag.id" :user="flag.attributes.user" />
+          </div>
           <component
             :is="elements[index].attributes.orderable_type"
             class="result-element"
@@ -205,6 +208,8 @@
             @component:delete="removeElement"
             @component:archive="removeElement"
             @component:restore="removeElement"
+            @component:editing-start="createEditingFlag"
+            @component:editing-end="destroyEditingFlag"
             @update="updateElement"
             @reorder="openReorderModal"
             @component:insert="insertElement"
@@ -271,6 +276,7 @@ import ManageItemsModal from '../shared/manage_items_modal.vue'
 import CustomWellPlateModal from '../shared/content/modal/custom_well_plate_modal.vue'
 import archiveResultModal from './modals/archive_result.vue';
 import deleteResultModal from './delete_result.vue';
+import EditingTag from '../shared/snippets/editing_tag.vue';
 
 import AttachmentsMixin from '../shared/content/mixins/attachments.js';
 import WopiFileModal from '../shared/content/attachments/mixins/wopi_file_modal.js';
@@ -278,6 +284,7 @@ import OveMixin from '../shared/content/attachments/mixins/ove.js';
 import UtilsMixin from '../mixins/utils.js';
 import ResultCommonMixin from './mixins/result_common.js';
 import DeleteMixin from '../shared/content/mixins/delete.js';
+import EditingFlagMixin from '../shared/content/mixins/editing_flag.js';
 import StorageUsage from '../shared/content/attachments/storage_usage.vue';
 
 export default {
@@ -344,7 +351,7 @@ export default {
       editingName: false
     };
   },
-  mixins: [UtilsMixin, AttachmentsMixin, WopiFileModal, OveMixin, ResultCommonMixin, DeleteMixin],
+  mixins: [UtilsMixin, AttachmentsMixin, WopiFileModal, OveMixin, ResultCommonMixin, DeleteMixin, EditingFlagMixin],
   components: {
     ReorderableItemsModal,
     Table,
@@ -359,7 +366,8 @@ export default {
     GeneralDropdown,
     archiveResultModal,
     deleteResultModal,
-    ManageItemsModal
+    ManageItemsModal,
+    EditingTag
   },
   watch: {
     activeDragResult() {
