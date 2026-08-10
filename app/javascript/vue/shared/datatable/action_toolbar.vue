@@ -8,8 +8,33 @@
         {{ i18n.t('action_toolbar.no_actions') }}
       </div>
       <div v-for="action in actions" :key="action.name" class="sn-action-toolbar__action shrink-0" :class="{ 'disable-click': disabledActions[action.name] }">
-        <a :class="`rounded flex gap-2 items-center py-1.5 px-1.5 xl:px-2.5 hover:text-sn-white hover:bg-sn-blue
-                  bg-sn-white color-sn-blue hover:no-underline focus:no-underline ${action.button_class}`"
+        <template v-if="action.type === 'group'">
+          <MenuDropdown
+            v-if="action.actions.length > 1"
+            :listItems="groupItems(action)"
+            :btnClasses="buttonClasses"
+            :btnText="action.group_label"
+            :btnIcon="groupIcon(action)"
+            :caret="true"
+            :smallScreenCollapse="true"
+            :title="action.group_label"
+            :dataE2e="`e2e-DD-actionToolbar-${e2eName(action)}`"
+            @groupAction="doAction"
+          ></MenuDropdown>
+          <a v-else-if="action.actions.length === 1"
+            :class="`${buttonClasses} ${action.actions[0].button_class || ''}`"
+            :href="(['link', 'remote-modal']).includes(action.actions[0].type) ? action.actions[0].path : '#'"
+            :data-target="action.actions[0].target"
+            :data-toggle="action.actions[0].type === 'modal' && 'modal'"
+            :id="action.actions[0].button_id"
+            :title="action.group_label"
+            :data-e2e="`e2e-BT-actionToolbar-${e2eName(action)}`"
+            @click="doAction(action.actions[0], $event)">
+            <i :class="groupIcon(action)"></i>
+            <span class="tw-hidden xl:inline-block">{{ action.group_label }}</span>
+          </a>
+        </template>
+        <a v-else :class="`${buttonClasses} ${action.button_class || ''}`"
           :href="(['link', 'remote-modal']).includes(action.type) ? action.path : '#'"
           :data-target="action.target"
           :data-toggle="action.type === 'modal' && 'modal'"
@@ -27,9 +52,13 @@
 
 <script>
 import axios from '../../../packs/custom_axios.js';
+import MenuDropdown from '../menu_dropdown.vue';
 
 export default {
   name: 'ActionToolbar',
+  components: {
+    MenuDropdown
+  },
   props: {
     actionsUrl: { type: String, required: true },
     actionsMethod: { type: String, default: 'post' },
@@ -44,6 +73,12 @@ export default {
       loading: true,
       disabledActions: {}
     };
+  },
+  computed: {
+    buttonClasses() {
+      return 'rounded flex gap-2 items-center py-1.5 px-1.5 xl:px-2.5 border-0 outline-none cursor-pointer '
+        + 'bg-sn-white text-sn-blue hover:text-sn-white hover:bg-sn-blue hover:no-underline focus:no-underline';
+    }
   },
   watch: {
     params() {
@@ -69,6 +104,25 @@ export default {
         this.loaded = true;
       });
     },
+    groupIcon(action) {
+      return action.icon || action.actions[0]?.icon;
+    },
+    // keeps the e2e ids of grouped actions in line with the legacy toolbar
+    e2eName(action) {
+      return action.name.replace(/_group$/, '');
+    },
+    // maps group sub actions to the MenuDropdown list item format
+    groupItems(action) {
+      return action.actions.map((subAction) => ({
+        text: subAction.label,
+        emit: 'groupAction',
+        params: subAction,
+        url: (['link', 'remote-modal']).includes(subAction.type) ? subAction.path : null,
+        modalTarget: subAction.type === 'modal' ? subAction.target : null,
+        e2e_class: subAction.button_class,
+        data_e2e: `e2e-BT-actionToolbar-${subAction.name}`
+      }));
+    },
     doAction(action, event) {
       this.disabledActions[action.name] = true;
 
@@ -78,7 +132,8 @@ export default {
 
       switch (action.type) {
         case 'emit':
-          event.preventDefault();
+          // dropdown items are emitted without an event, MenuDropdown already prevents the default
+          event?.preventDefault();
           this.$emit('toolbar:action', action);
           break;
         case 'modal':

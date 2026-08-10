@@ -496,6 +496,10 @@ module Lists
         'created_by.full_name'
       when 'created_at'
         'repository_rows.created_at'
+      when 'archived_on'
+        'repository_rows.archived_on'
+      when 'archived_by'
+        'archived_by.full_name'
       when 'connections_count'
         '(COALESCE(repository_rows.parent_connections_count, 0) + COALESCE(repository_rows.child_connections_count, 0))'
       when 'name'
@@ -522,6 +526,8 @@ module Lists
                            .group('repository_rows.id')
       when 'created_by'
         @records = @records.joins('LEFT OUTER JOIN "users" "created_by" ON "created_by"."id" = "repository_rows"."created_by_id"')
+      when 'archived_by'
+        @records = @records.joins('LEFT OUTER JOIN "users" "archived_by" ON "archived_by"."id" = "repository_rows"."archived_by_id"')
 
       when 'consumed_stock'
         if @my_module && !@is_snapshot
@@ -559,7 +565,9 @@ module Lists
         code: 'repository_rows.id',
         assigned_tasks_count: 'assigned',
         created_by: 'created_by.full_name',
-        created_at: 'repository_rows.created_at'
+        created_at: 'repository_rows.created_at',
+        archived_by: 'archived_by.full_name',
+        archived_on: 'repository_rows.archived_on'
       }[column.to_sym]
     end
 

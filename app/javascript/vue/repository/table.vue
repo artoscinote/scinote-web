@@ -9,14 +9,14 @@
       :reloadingTable="reloadingTable"
       :toolbarActions="toolbarActions"
       :actionsUrl="toolbarActionsUrl"
+      :currentViewMode="currentViewMode"
+      :activePageUrl="activePageUrl"
+      :archivedPageUrl="archivedPageUrl"
       :filters="[]"
       :enableBarcodeSearch="true"
       :fetchColumnsOnReload="true"
       :addingNewRow="addingNewRow"
       :newRowTemplate="newRowTemplate"
-      :activePageUrl="activePageUrl"
-      :archivedPageUrl="archivedPageUrl"
-      :currentViewMode="currentViewMode"
       @cancelCreation="cancelCreation"
       @showTextCell="showTextCellModal"
       @updateCell="updateCell"
@@ -29,6 +29,15 @@
       @startCreate="addingNewRow = true"
       @importItems="importItems"
       @clearAllReminders="clearAllReminders"
+      @restore="postRowsAction"
+      @archive="postRowsAction"
+      @duplicate="postRowsAction"
+      @delete="deleteRows"
+      @assign="assignRows"
+      @print_label="printLabels"
+      @export_records="openExportRowsModal"
+      @export_consumption="exportConsumption"
+      @create_event="createEvent"
     ></DataTable>
     <teleport to="body">
       <ImportRepositoryModal ref="importModal" :repository-url="repositoryUrl" @import-success="reloadingTable = true" />
@@ -43,16 +52,34 @@
         :stockUrl="stockValueModalUrl"
         @updateStock="updateStock"
         @close="stockValueModalUrl = null"/>
+      <ExportRowsModal
+        v-if="exportRowsModalObject"
+        :repositoryName="repositoryVersion.attributes.name"
+        :rows="exportRowsModalObject.rows"
+        :headerIds="exportRowsModalObject.headerIds"
+        :exportAction="exportRowsModalObject.action"
+        @close="exportRowsModalObject = null"/>
+      <ConfirmationModal
+        ref="deleteModal"
+        :title="i18n.t('repositories.modal_delete_record.title')"
+        :description="deleteModalDescription"
+        confirmClass="btn btn-danger"
+        :confirmText="i18n.t('repositories.modal_delete_record.delete')"
+        e2eValue="invInventoryDeleteAT"/>
     </teleport>
   </div>
 </template>
 <script>
+/* global HelperModule */
+
 import DataTable from '../shared/datatable/table.vue';
 import axios from '../../packs/custom_axios.js';
 import ColumnsMixin from './columns_mixin.js';
+import ConfirmationModal from '../shared/confirmation_modal.vue';
 import TextCellModal from './modals/text_cell.vue';
 import StockValueModal from './modals/stock_value_modal.vue';
 import ImportRepositoryModal from '../repositories/modals/import/container.vue';
+import ExportRowsModal from './modals/export_rows.vue';
 
 import {
   repository_table_index_ag_path,
@@ -61,7 +88,8 @@ import {
   repository_repository_row_path,
   repository_repository_row_repository_cell_path,
   rails_direct_uploads_path,
-  team_repository_hide_reminders_path
+  team_repository_hide_reminders_path,
+  actions_toolbar_repository_repository_rows_path
 } from '../../routes.js';
 
 export default {
@@ -75,9 +103,11 @@ export default {
   },
   components: {
     DataTable,
+    ConfirmationModal,
     TextCellModal,
     StockValueModal,
-    ImportRepositoryModal
+    ImportRepositoryModal,
+    ExportRowsModal
   },
   mixins: [ColumnsMixin],
   data: () => ({
@@ -88,6 +118,7 @@ export default {
     stockValueModalUrl: null,
     hasActiveReminders: false,
     currentPageRows: [],
+    exportRowsModalObject: null,
     newRowTemplate: {
       name: {
         value: '',
@@ -99,8 +130,13 @@ export default {
     window.repositoryTable = this;
     this.loadRepository();
   },
+  mounted() {
+    // triggered by the globally mounted assign items to task modal
+    window.addEventListener('repository:rows:updated', this.reloadTable);
+  },
   beforeUnmount() {
     delete window.repositoryTable;
+    window.removeEventListener('repository:rows:updated', this.reloadTable);
   },
   computed: {
     toolbarActions() {
@@ -151,8 +187,14 @@ export default {
       return repository_repository_rows_path(this.repositoryId);
     },
     toolbarActionsUrl() {
-      return '';
+      return actions_toolbar_repository_repository_rows_path(this.repositoryId);
     },
+    deleteModalDescription() {
+      return `
+        <p>${this.i18n.t('repositories.modal_delete_record.notice')}</p>
+        <p>${this.i18n.t('repositories.modal_delete_record.notice_warning_html')}</p>
+      `;
+    }
   },
   methods: {
     updateRowData(row) {
@@ -258,6 +300,70 @@ export default {
       }
       updatedRow['active_reminders_count'] = count;
       this.$refs.repositoryTable.updateRowData(updatedRow);
+    },
+    reloadTable() {
+      this.reloadingTable = true;
+    },
+    // handles restore, archive, duplicate and delete, they all take the same payload
+    postRowsAction(action, rows) {
+      axios.post(action.path, {
+        selected_rows: rows.map((row) => row.id)
+      }).then((response) => {
+        HelperModule.flashAlertMsg(response.data.flash, response.data.color || 'success');
+        this.reloadTable();
+      }).catch((error) => {
+        HelperModule.flashAlertMsg(
+          error.response?.data?.error || error.response?.data?.flash || this.i18n.t('general.error'),
+          'danger'
+        );
+      });
+    },
+    async deleteRows(action, rows) {
+      const ok = await this.$refs.deleteModal.show();
+      if (ok) this.postRowsAction(action, rows);
+    },
+    assignRows(_action, rows) {
+      window.AssignItemsToTaskModalComponentContainer.showModal(rows.map((row) => row.id));
+    },
+    printLabels(_action, rows) {
+      if (typeof window.PrintModalComponent === 'undefined') return;
+
+      window.PrintModalComponent.openModal();
+      window.PrintModalComponent.repository_id = this.repositoryId;
+      window.PrintModalComponent.row_ids = rows.map((row) => row.id);
+    },
+    openExportRowsModal(action, rows) {
+      this.exportRowsModalObject = { action, rows, headerIds: this.visibleHeaderIds() };
+    },
+    // the columns the user currently sees, in the order they see them, like the old table exported them
+    visibleHeaderIds() {
+      const legacyIds = {};
+      this.repositoryColumnsDef.forEach((column) => {
+        if (column.cellRendererParams?.legacyId) {
+          legacyIds[column.field] = column.cellRendererParams.legacyId;
+        }
+      });
+
+      const columnsState = this.$refs.repositoryTable?.gridApi?.getColumnState();
+
+      // the grid might not be initialized yet, fall back to the order the columns are defined in
+      if (!columnsState) return Object.values(legacyIds);
+
+      return columnsState.filter((column) => !column.hide && legacyIds[column.colId])
+        .map((column) => legacyIds[column.colId]);
+    },
+    exportConsumption(_action, rows) {
+      window.initExportStockConsumptionModal();
+
+      if (window.exportStockConsumptionModalComponent) {
+        window.exportStockConsumptionModalComponent.fetchRepositoryData(
+          rows.map((row) => row.id),
+          { repository_id: this.repositoryId }
+        );
+      }
+    },
+    createEvent(_action, rows) {
+      window.EventCreateRepositoryRow?.showModal(rows[0].id);
     }
   }
 };

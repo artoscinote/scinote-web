@@ -95,6 +95,20 @@ export default {
           legacyId: -5
         },
       });
+
+      if (this.currentViewMode === 'archived') {
+        columns.push({
+          field: 'archived_on',
+          headerName: this.i18n.t('repositories.table.archived_on'),
+          sortable: true
+        });
+        columns.push({
+          field: 'archived_by',
+          headerName: this.i18n.t('repositories.table.archived_by'),
+          sortable: true
+        });
+      }
+
       return columns;
     },
     minWidth() {

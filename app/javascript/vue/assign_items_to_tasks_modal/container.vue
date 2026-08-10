@@ -316,13 +316,19 @@ export default {
       });
     },
     reloadTable() {
-      $('.repository-row-selector:checked').trigger('click');
-      $('.repository-table')
-        .find('table')
-        .dataTable()
-        .api()
-        .ajax
-        .reload(null, false);
+      const legacyTable = $('.repository-table').find('table');
+
+      if (legacyTable.length) {
+        $('.repository-row-selector:checked').trigger('click');
+        legacyTable
+          .dataTable()
+          .api()
+          .ajax
+          .reload(null, false);
+      }
+
+      // picked up by the Vue inventory table
+      window.dispatchEvent(new CustomEvent('repository:rows:updated'));
     }
   }
 };
